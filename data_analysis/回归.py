@@ -139,3 +139,10 @@ if __name__ == '__main__':
     plot_predict(poly_lr, poly_feat, labels2, y_value2)
     print_coefficients(poly_lr)
     print(poly_lr.score(poly_feat, labels2))
+
+    # 岭回归
+    ridge = linear_model.Ridge(alpha=1)
+    ridge.fit(features, labels1)
+    plot_predict(ridge, features, labels1, 'Ridge')
+    print_coefficients(ridge)
+    print(ridge.score(features, labels1))
