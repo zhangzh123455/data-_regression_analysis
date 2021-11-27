@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from sklearn import preprocessing as ppcs
 from sklearn import linear_model
 from sklearn import metrics
-from sklearn import svm
+from sklearn.svm import LinearSVR
 from sklearn import model_selection
 
 # dff = pd.read_csv('data.csv')
@@ -107,19 +107,31 @@ if __name__ == '__main__':
     labels2 = df1[y_value2]
     plot_corr_matrix(df1)
 
+    # 线性回归
     # lr = linear_model.LinearRegression()
     # lr.fit(features, labels2)
     # plot_predict(lr, features, labels2, 'Linear')
     # print_coefficients(lr)
     # print(lr.score(features, labels2))
+
+    # 岭回归
+    # ridge = linear_model.Ridge(alpha=1)
+    # ridge.fit(features, labels1)
+    # plot_predict(ridge, features, labels1, 'Ridge')
+    # print_coefficients(ridge)
+    # print(ridge.score(features, labels1))
+
+
+
+
     poly_feat = ppcs.PolynomialFeatures(degree=2, include_bias=False).fit_transform(features)
-    print(poly_feat)
+    # print(poly_feat)
     # 这里有四个变量，交互项 c(4, 2) = 6，加上平方项 4 个、一次项 4 个、变成 14 个特征
     # 因为要得出回归方程，确定一下交互项的排序（文档没写...）
-    df = pd.DataFrame({'x1': [3], 'x2': [5], 'x3': [7], 'x4': [11]})
-    print(df)
-    print(ppcs.PolynomialFeatures(degree=2, include_bias=False).fit_transform(df))
-    # 应用线性回归
+    # df = pd.DataFrame({'x1': [3], 'x2': [5], 'x3': [7], 'x4': [11]})
+    # print(df)
+    # print(ppcs.PolynomialFeatures(degree=2, include_bias=False).fit_transform(df))
+    # 应用多项式线性回归
     poly_lr = linear_model.LinearRegression()
     poly_lr.fit(poly_feat, labels1)
     plot_predict(poly_lr, poly_feat, labels1, y_value1)
@@ -140,9 +152,20 @@ if __name__ == '__main__':
     print_coefficients(poly_lr)
     print(poly_lr.score(poly_feat, labels2))
 
-    # 岭回归
-    ridge = linear_model.Ridge(alpha=1)
-    ridge.fit(features, labels1)
-    plot_predict(ridge, features, labels1, 'Ridge')
-    print_coefficients(ridge)
-    print(ridge.score(features, labels1))
+    scores = []
+    for train, test in model_selection.KFold(5).split(poly_feat):
+        plr = linear_model.LinearRegression()
+        plr.fit(poly_feat[train], labels1[train])
+        s = metrics.r2_score(labels1[test], plr.predict(poly_feat[test]))
+        scores.append(s)
+    plt.plot(scores)
+    plt.show()
+    # 明显的低偏差高方差，这里相当于用 5% 的【非随机采样】来预测整体（中国一共六百多个城市）
+    # 而且可用的特征不多，能不能泛化看天意...
+    model = {
+        'label': y_value1,
+        'columns': list(features.columns),
+        'poly-degree': 2,
+        'intercept': float(poly_lr.intercept_),
+        'coefs': [float(c) for c in poly_lr.coef_]
+    }
